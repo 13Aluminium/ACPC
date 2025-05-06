@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACPC College Selection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .filter-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .filter-group {
+            margin-bottom: 10px;
+        }
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, button {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .results-container {
+            margin-top: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+            border-radius: 5px;
+        }
+        .no-results {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>ACPC College Selection System</h1>
+    
+    <div class="filter-container">
+        <div class="filter-group">
+            <label for="round">Round:</label>
+            <select id="round">
+                <option value="1">Mock Round</option>
+                <option value="2">First Round</option>
+                <option value="3">Third Round</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label for="course">Course:</label>
+            <select id="course">
+                <option value="">All Courses</option>
+                {% for course in filter_options.Course_name %}
+                <option value="{{ course }}">{{ course }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label for="category">Category:</label>
+            <select id="category">
+                <option value="">All Categories</option>
+                {% for cat in filter_options.Alloted_Cat %}
+                <option value="{{ cat }}">{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label for="quota">Quota:</label>
+            <select id="quota">
+                <option value="">All Quotas</option>
+                {% for quota in filter_options.Quota %}
+                <option value="{{ quota }}">{{ quota }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label for="institute-type">Institute Type:</label>
+            <select id="institute-type">
+                <option value="">All Types</option>
+                {% for type in filter_options["Institute Type"] %}
+                <option value="{{ type }}">{{ type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label for="city">City:</label>
+            <select id="city">
+                <option value="">All Cities</option>
+                {% for city in filter_options.City %}
+                <option value="{{ city }}">{{ city }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label>&nbsp;</label>
+            <button id="apply-filters">Apply Filters</button>
+        </div>
+    </div>
+    
+    <div class="results-container">
+        <table id="results-table">
+            <thead>
+                <tr>
+                    <th>Institute Name</th>
+                    <th>Course</th>
+                    <th>Category</th>
+                    <th>Quota</th>
+                    <th>Institute Type</th>
+                    <th>First Rank</th>
+                    <th>Last Rank</th>
+                    <th>City</th>
+                </tr>
+            </thead>
+            <tbody id="results-body">
+                <tr>
+                    <td colspan="8" class="no-results">Select filters and click Apply to see results</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.getElementById('apply-filters').addEventListener('click', function() {
+            const filters = {
+                Round: document.getElementById('round').value,
+                Course_name: document.getElementById('course').value,
+                Alloted_Cat: document.getElementById('category').value,
+                Quota: document.getElementById('quota').value,
+                'Institute Type': document.getElementById('institute-type').value,
+                City: document.getElementById('city').value
+            };
+            
+            fetch('/filter_data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(filters),
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultsBody = document.getElementById('results-body');
+                resultsBody.innerHTML = '';
+                
+                if (data.data.length === 0) {
+                    resultsBody.innerHTML = '<tr><td colspan="8" class="no-results">No results found</td></tr>';
+                    return;
+                }
+                
+                data.data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.Inst_Name || ''}</td>
+                        <td>${row.Course_name || ''}</td>
+                        <td>${row.Alloted_Cat || ''}</td>
+                        <td>${row.Quota || ''}</td>
+                        <td>${row['Institute Type'] || ''}</td>
+                        <td>${row['First Rank'] || ''}</td>
+                        <td>${row['Last Rank'] || ''}</td>
+                        <td>${row.City || ''}</td>
+                    `;
+                    resultsBody.appendChild(tr);
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('results-body').innerHTML = 
+                    '<tr><td colspan="8" class="no-results">Error loading data</td></tr>';
+            });
+        });
+    </script>
+</body>
+</html>
